@@ -147,6 +147,12 @@ public class ConsulRegistry extends FailbackRegistry {
     @Override
     protected void doSubscribe(URL url, NotifyListener notifyListener) {
 
+        if(Constants.ANY_VALUE.equals(url.getServiceInterface())){
+
+        }else {
+
+        }
+
         List<String> dubboServiceNames = getAllDubboServiceNames();
         //1. getServiceNames
 
@@ -178,6 +184,29 @@ public class ConsulRegistry extends FailbackRegistry {
             serviceHealthCache.start();
         }
 
+    }
+
+    private List<String> getServicesByCategories(URL url){
+        List<String> categories = getCategories(url);
+        final List<String> serviceNames = new ArrayList<>(categories.size());
+        categories.forEach( category->{
+            final String serviceName = getServiceName(url,category);
+            serviceNames.add(serviceName);
+        });
+        return serviceNames;
+    }
+
+    private String getServiceName(URL url,String category){
+        StringBuilder serviceNameBuilder = new StringBuilder(category).append(":");
+        serviceNameBuilder.append(url.getParameter(Constants.INTERFACE_KEY)).append(":")
+                .append(url.getParameter(Constants.VERSION_KEY)).append(":")
+                .append(url.getParameter(Constants.GROUP_KEY));
+        return serviceNameBuilder.toString();
+    }
+
+    private List<String> getCategories(URL url){
+        return Constants.ANY_VALUE.equals(url.getServiceInterface()) ?
+                ALL_SUPPORTED_CATEGORIES : Collections.singletonList(Constants.DEFAULT_CATEGORY);
     }
 
     private List<String> getAllDubboServiceNames() {
@@ -279,11 +308,8 @@ public class ConsulRegistry extends FailbackRegistry {
         if (url.getParameters() != null) {
             builder.meta(url.getParameters());
         }
-        List<String> tags = new ArrayList<String>() {{
-            add(CONSUL_SERVICE_ID_PREFIX);
-        }};
 
-        builder.tags(tags);
+        builder.tags(Collections.singletonList(CONSUL_SERVICE_ID_PREFIX););
 
         return builder.build();
     }
